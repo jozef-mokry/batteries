@@ -160,7 +160,7 @@ fn main() {
 
                 if solutions
                     .iter()
-                    .all(|s| !same_solution(&s[..6], &solution[..6]))
+                    .all(|s| !same_solution(&s[..], &solution[..]))
                 {
                     solutions.push(solution);
                 }
