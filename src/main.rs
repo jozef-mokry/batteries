@@ -127,6 +127,7 @@ fn remove_impossible_universes(pair: BitSet, mut universes: Vec<BitSet>) -> Vec<
 }
 
 fn main() {
+    let mut solutions: Vec<Vec<_>> = vec![];
     let all_battery_pairs: Vec<_> = CombinationIter::new(8, 2).collect();
 
     // WLOG we can assume that the first battery pair is part of solution
@@ -150,19 +151,82 @@ fn main() {
             .reduce(|acc, v| acc & v)
         {
             Some(x) if x.len() >= 2 => {
-                print!(
-                    "Solution: {:?}",
-                    all_battery_pairs[0].into_iter().collect::<Vec<_>>()
-                );
+                let mut solution = vec![];
+                solution.push(all_battery_pairs[0].into_iter().collect::<Vec<_>>());
                 for pair in five_steps {
-                    print!(
-                        " {:?}",
-                        all_battery_pairs[pair].into_iter().collect::<Vec<_>>()
-                    );
+                    solution.push(all_battery_pairs[pair].into_iter().collect::<Vec<_>>());
                 }
-                println!(" {:?}", x.into_iter().collect::<Vec<_>>());
+                solution.push(x.into_iter().collect::<Vec<_>>());
+
+                if solutions
+                    .iter()
+                    .all(|s| !same_solution(&s[..6], &solution[..6]))
+                {
+                    solutions.push(solution);
+                }
             }
             Some(_) | None => {}
         };
     }
+    println!("Solutions:");
+    for solution in solutions {
+        println!("{solution:?}");
+    }
+}
+
+fn same_solution(a: &[Vec<usize>], b: &[Vec<usize>]) -> bool {
+    fn are_aligned(a: &[Vec<usize>], b: &[Vec<usize>], map: &[usize]) -> bool {
+        if a.len() != b.len() {
+            panic!("{a:?} {b:?}");
+        }
+
+        for edge_a in a {
+            let &[a, aa] = &edge_a[..] else { panic!("edge should have two numbers");};
+            let mapped_edge = [map[a], map[aa]];
+            let mapped_edge_rev = [map[aa], map[a]];
+            if !b
+                .iter()
+                .any(|b_edge| b_edge[..] == mapped_edge || b_edge[..] == mapped_edge_rev)
+            {
+                return false;
+            }
+        }
+        true
+    }
+
+    let mut map: Vec<usize> = (0..8).collect();
+    if are_aligned(a, b, &map) {
+        return true;
+    }
+    while permute(&mut map) {
+        if are_aligned(a, b, &map) {
+            return true;
+        }
+    }
+    false
+}
+
+fn permute<T: PartialOrd>(v: &mut Vec<T>) -> bool {
+    // from the back, find first decrease
+    let mut pos = v.len();
+    for i in (0..v.len() - 1).rev() {
+        if v[i] < v[i + 1] {
+            pos = i;
+            break;
+        }
+    }
+    if pos == v.len() {
+        v.reverse();
+        return false;
+    }
+
+    // from the back find first larger than v[pos]
+    for j in (pos + 1..v.len()).rev() {
+        if v[j] > v[pos] {
+            v.swap(j, pos);
+            v[pos + 1..].reverse();
+            break;
+        }
+    }
+    true
 }
